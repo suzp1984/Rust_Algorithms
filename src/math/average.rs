@@ -10,7 +10,6 @@ This program approximates the mean, median and mode of a finite sequence.
 Note: `mean` function only limited to float 64 numbers. Floats sequences are not allowed for `median` & `mode` functions.
 "]
 use std::collections::HashMap;
-use std::ops::{Add, Div, Sub};
 /// # Argument
 ///
 /// * `sequence` - A vector of float64 numbers.
@@ -24,33 +23,33 @@ pub fn mean(sequence: Vec<f64>) -> f64 {
     sum / n
 }
 
-/// # Argument
-///
-/// * `sequence` - A vector of numbers.
-/// Returns median of `sequence`.
+use num_traits::Num;
 
-pub fn median<T: Add<Output = T> + Sub<Output = T> + Div<i32, Output = T> + Ord + Copy>(
-    mut sequence: Vec<T>,
-) -> T {
-    sequence.sort();
-    if sequence.len() % 2 == 1 {
-        let k = (sequence.len() + 1) / 2;
-        sequence[k - 1]
-    } else {
-        let j = (sequence.len()) / 2;
-        (sequence[j - 1] + sequence[j]) / 2
-    }
+fn mean_of_two<T: Num + Copy>(a: T, b: T) -> T {
+    (a + b) / (T::one() + T::one())
 }
 
 /// # Argument
 ///
 /// * `sequence` - A vector of numbers.
+/// Returns median of `sequence`.
+
+pub fn median<T: Num + Copy + PartialOrd>(mut sequence: Vec<T>) -> T {
+    sequence.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    if sequence.len() % 2 == 1 {
+        let k = (sequence.len() + 1) / 2;
+        sequence[k - 1]
+    } else {
+        let j = (sequence.len()) / 2;
+        mean_of_two(sequence[j - 1], sequence[j])
+    }
+}
+
+/// # Argument
+///
+/// * `sequence` - The input vector.
 /// Returns mode of `sequence`.
-pub fn mode<
-    T: Add<Output = T> + Sub<Output = T> + Div<i32, Output = T> + Ord + Copy + std::hash::Hash,
->(
-    sequence: Vec<T>,
-) -> T {
+pub fn mode<T: Eq + Copy + std::hash::Hash>(sequence: Vec<T>) -> T {
     let mut hash = HashMap::new();
     for value in sequence {
         let count = hash.entry(value).or_insert(0);
@@ -66,11 +65,15 @@ mod test {
     fn median_test() {
         assert_eq!(median(vec![4, 53, 2, 1, 9, 0, 2, 3, 6]), 3);
         assert_eq!(median(vec![-9, -8, 0, 1, 2, 2, 3, 4, 6, 9, 53]), 2);
+        assert_eq!(median(vec![2, 3]), 2);
+        assert_eq!(median(vec![3.0, 2.0]), 2.5);
+        assert_eq!(median(vec![1.0, 700.0, 5.0]), 5.0);
     }
     #[test]
     fn mode_test() {
         assert_eq!(mode(vec![4, 53, 2, 1, 9, 0, 2, 3, 6]), 2);
         assert_eq!(mode(vec![-9, -8, 0, 1, 2, 2, 3, -1, -1, 9, -1, -9]), -1);
+        assert_eq!(mode(vec!["a", "b", "a"]), "a");
     }
     #[test]
     fn mean_test() {
